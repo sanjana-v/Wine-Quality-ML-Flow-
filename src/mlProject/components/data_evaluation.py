@@ -6,11 +6,20 @@ import mlflow
 import mlflow.sklearn
 import numpy as np
 import joblib
-import dagshub
 from mlProject.entity.config_entity import ModelEvaluationConfig
 from mlProject.utils.common import save_json
 from pathlib import Path
+import dagshub
+import json
+from mlProject.constants import *
+from mlProject.utils.common import read_yaml, create_directories, save_json
 
+
+
+
+os.environ["MLFLOW_TRACKING_URI"] = "https://dagshub.com/sanjana-v/Wine-Quality-ML-Flow-.mlflow"
+os.environ["MLFLOW_EXPERIMENT_NAME"] = "sanjana-v"  
+os.environ["MLFLOW_TOKEN"] = "9a195bb9e7d4b8f35a21d054c7d379007e630914" 
 
 
 class ModelEvaluation:
@@ -26,10 +35,8 @@ class ModelEvaluation:
     
 
 
-    
-
-
     def log_into_mlflow(self):
+
 
         test_data = pd.read_csv(self.config.test_data_path)
         model = joblib.load(self.config.model_path)
@@ -44,83 +51,36 @@ class ModelEvaluation:
         dagshub.init("Wine-Quality-ML-Flow-", "sanjana-v", mlflow=True)
 
 
-        print("hello19")
+        with mlflow.start_run():
 
-        predicted_qualities = model.predict(test_x)
+            print("hello99")
 
-        (rmse, mae, r2) = self.eval_metrics(test_y, predicted_qualities)
+            predicted_qualities = model.predict(test_x)
+
+            (rmse, mae, r2) = self.eval_metrics(test_y, predicted_qualities)
             
             # Saving metrics as local
-        scores = {"rmse": rmse, "mae": mae, "r2": r2}
+            scores = {"rmse": rmse, "mae": mae, "r2": r2}
+            print("hello")
+            save_json(path=Path(self.config.metric_file_name), data=scores)
 
-        print("hello18")
+            mlflow.log_params(self.config.all_params)
+            print("hello1")
 
-        save_json(path=Path(self.config.metric_file_name), data=scores)
-
-        #mlflow.log_params(self.config.all_params)
-        mlflow.log_params({ "alpha": 0.2, "l1_ratio": 0.3})
-
-
-            #mlflow.log_params({"alpha": float(self.config.all_params['ElasticNet']['alpha']), "l1_ratio": float(self.config.all_params['ElasticNet']['l1_ratio'])})
-
-
-
-        mlflow.log_metric("rmse", rmse)
-        mlflow.log_metric("r2", r2)
-        mlflow.log_metric("mae", mae)
+            mlflow.log_metric("rmse", rmse)
+            mlflow.log_metric("r2", r2)
+            mlflow.log_metric("mae", mae)
 
 
             # Model registry does not work with file store
-        if tracking_url_type_store != "file":
+            if tracking_url_type_store != "file":
 
                 # Register the model
                 # There are other ways to use the Model Registry, which depends on the use case,
                 # please refer to the doc for more information:
                 # https://mlflow.org/docs/latest/model-registry.html#api-workflow
-            mlflow.sklearn.log_model(model, "model", registered_model_name="ElasticnetModel")
-        else:
-            mlflow.sklearn.log_model(model, "model")
-
-
-
-        # with mlflow.start_run():
-
-
-        #     print("hello19")
-
-        #     predicted_qualities = model.predict(test_x)
-
-        #     (rmse, mae, r2) = self.eval_metrics(test_y, predicted_qualities)
-            
-        #     # Saving metrics as local
-        #     scores = {"rmse": rmse, "mae": mae, "r2": r2}
-
-        #     print("hello18")
-
-        #     save_json(path=Path(self.config.metric_file_name), data=scores)
-
-        #     #mlflow.log_params(self.config.all_params)
-        #     #mlflow.log_params({ "alpha": 0.2, "l1_ratio": 0.3})
-
-
-        #     mlflow.log_params({"alpha": float(self.config.all_params['ElasticNet']['alpha']), "l1_ratio": float(self.config.all_params['ElasticNet']['l1_ratio'])})
-
-
-
-        #     mlflow.log_metric("rmse", rmse)
-        #     mlflow.log_metric("r2", r2)
-        #     mlflow.log_metric("mae", mae)
-
-
-        #     # Model registry does not work with file store
-        #     if tracking_url_type_store != "file":
-
-        #         # Register the model
-        #         # There are other ways to use the Model Registry, which depends on the use case,
-        #         # please refer to the doc for more information:
-        #         # https://mlflow.org/docs/latest/model-registry.html#api-workflow
-        #         mlflow.sklearn.log_model(model, "model", registered_model_name="ElasticnetModel")
-        #     else:
-        #         mlflow.sklearn.log_model(model, "model")
+                mlflow.sklearn.log_model(model, "model", registered_model_name="ElasticnetModel")
+            else:
+                mlflow.sklearn.log_model(model, "model")
 
     
